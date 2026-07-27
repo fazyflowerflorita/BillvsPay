@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bill vs Pay Reconciliation</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace">
+        <aside class="sidebar">
+          <div>
+            <p class="eyebrow">Process Excellence</p>
+            <h1>Bill vs Pay Reconciliation</h1>
+            <p class="lede">Upload Payroll and Billing exports, apply business rules, and generate an auditable reconciliation workbook.</p>
+          </div>
+          <div class="steps">
+            <div class="step active"><span>1</span>Upload reports</div>
+            <div class="step"><span>2</span>Clean data</div>
+            <div class="step"><span>3</span>Match transactions</div>
+            <div class="step"><span>4</span>Download report</div>
+          </div>
+        </aside>
+
+        <section class="panel">
+          <form id="reconcileForm" class="upload-grid">
+            <label class="drop-zone">
+              <span class="label">Payroll Report</span>
+              <input id="payroll" name="payroll" type="file" accept=".xlsx,.xlsm" required />
+              <span class="file-name" id="payrollName">Choose Payroll Excel export</span>
+            </label>
+            <label class="drop-zone">
+              <span class="label">Billing Report</span>
+              <input id="billing" name="billing" type="file" accept=".xlsx,.xlsm" required />
+              <span class="file-name" id="billingName">Choose Billing Excel export</span>
+            </label>
+            <button id="runButton" type="submit">Run Reconciliation</button>
+          </form>
+
+          <div id="status" class="status idle">Ready for upload</div>
+
+          <section id="results" class="results hidden">
+            <div class="metric-row">
+              <div class="metric">
+                <span>Reconciled Groups</span>
+                <strong id="reconciledCount">0</strong>
+              </div>
+              <div class="metric">
+                <span>Exception Groups</span>
+                <strong id="exceptionCount">0</strong>
+              </div>
+            </div>
+            <div class="result-actions">
+              <a id="downloadLink" class="download" href="#">Download Reconciliation Workbook</a>
+            </div>
+            <div class="tables">
+              <div>
+                <h2>Summary</h2>
+                <table id="summaryTable"></table>
+              </div>
+              <div>
+                <h2>Exception Categories</h2>
+                <table id="exceptionTable"></table>
+              </div>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+

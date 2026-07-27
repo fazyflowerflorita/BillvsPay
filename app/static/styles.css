@@ -1,0 +1,279 @@
+:root {
+  color-scheme: light;
+  --ink: #172026;
+  --muted: #66727d;
+  --line: #d8dee4;
+  --paper: #f5f7f9;
+  --panel: #ffffff;
+  --green: #146c43;
+  --blue: #1f5f99;
+  --red: #b42318;
+  --amber: #8a5a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.shell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  min-height: calc(100vh - 64px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px;
+  background: #20313d;
+  color: #fff;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #9dd8c8;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.12;
+  font-weight: 700;
+}
+
+.lede {
+  margin: 18px 0 0;
+  color: #dbe6ec;
+  line-height: 1.55;
+}
+
+.steps {
+  display: grid;
+  gap: 12px;
+  margin-top: 48px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c5d2da;
+  font-weight: 600;
+}
+
+.step span {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #6e818c;
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+.step.active span {
+  background: #9dd8c8;
+  border-color: #9dd8c8;
+  color: #172026;
+}
+
+.panel {
+  padding: 40px;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: end;
+}
+
+.drop-zone {
+  display: grid;
+  gap: 12px;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px dashed #9aa8b4;
+  background: #fbfcfd;
+  cursor: pointer;
+}
+
+.drop-zone:hover {
+  border-color: var(--blue);
+  background: #f3f8fc;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+input[type="file"] {
+  width: 100%;
+}
+
+.file-name {
+  align-self: end;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+button,
+.download {
+  min-height: 46px;
+  border: 0;
+  background: var(--blue);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+button {
+  grid-column: 1 / -1;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.status {
+  margin: 24px 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--blue);
+  background: #eef6fb;
+  color: #17324a;
+  font-weight: 600;
+}
+
+.status.error {
+  border-left-color: var(--red);
+  background: #fff1f0;
+  color: var(--red);
+}
+
+.status.success {
+  border-left-color: var(--green);
+  background: #edf8f1;
+  color: var(--green);
+}
+
+.hidden {
+  display: none;
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric {
+  padding: 18px;
+  border: 1px solid var(--line);
+  background: #fbfcfd;
+}
+
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.metric strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 38px;
+}
+
+.result-actions {
+  margin: 18px 0 28px;
+}
+
+.download {
+  display: inline-grid;
+  place-items: center;
+  padding: 0 18px;
+}
+
+.tables {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+td,
+th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  background: #eef2f5;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 880px) {
+  .shell {
+    padding: 0;
+  }
+
+  .workspace,
+  .upload-grid,
+  .metric-row,
+  .tables {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace {
+    min-height: 100vh;
+    border: 0;
+  }
+
+  .sidebar,
+  .panel {
+    padding: 24px;
+  }
+}
+
