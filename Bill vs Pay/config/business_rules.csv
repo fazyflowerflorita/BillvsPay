@@ -1,0 +1,7 @@
+rule_type,value,description
+excluded_earnings_code,ACA,Exclude ACA transactions from reconciliation.
+excluded_earnings_code,BGC,Exclude background check transactions from reconciliation.
+excluded_earnings_code,FEE,Exclude fee transactions from reconciliation.
+setting,w2_only,true
+setting,hours_tolerance,0.01
+setting,amount_tolerance,0.01
