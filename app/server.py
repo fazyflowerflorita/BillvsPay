@@ -651,10 +651,6 @@ def internal_error(error):
     logger.error(f"Internal server error: {error}")
     return jsonify({'error': 'Internal server error'}), 500
 
-
-if __name__ == '__main__':
-    host = os.environ.get('HOST', '127.0.0.1')
-    port = int(os.environ.get('PORT', 8765))
     
     logger.info(f"Starting server on {host}:{port}")
     app.run(host=host, port=port, debug=False, threaded=True)
