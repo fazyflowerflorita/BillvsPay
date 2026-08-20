@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+import sys
 from datetime import datetime
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file
@@ -8,9 +9,11 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font
 
+# Ultra-verbose logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
 )
 logger = logging.getLogger(__name__)
 
@@ -136,57 +139,103 @@ def progress():
 
 @app.route('/reconcile', methods=['POST'])
 def reconcile():
+    print("=" * 80, flush=True)
+    print("RECONCILE ENDPOINT CALLED", flush=True)
+    logger.info("=" * 80)
+    logger.info("RECONCILE ENDPOINT CALLED")
+    
     global start_time
     try:
         start_time = None
-        logger.info("=== RECONCILE START ===")
+        logger.info("DEBUG: Resetting start_time")
         
+        print("DEBUG: Getting files from request", flush=True)
+        logger.info("DEBUG: Getting files from request")
         pf = request.files.get('payroll')
         bf = request.files.get('billing')
+        
         if not pf or not bf:
-            logger.error("Missing files")
+            logger.error("DEBUG: Missing files")
+            print("DEBUG: Missing files", flush=True)
             return 'Missing files', 400
         
-        logger.info(f"Files received: {pf.filename}, {bf.filename}")
+        print(f"DEBUG: Files received - Payroll: {pf.filename}, Billing: {bf.filename}", flush=True)
+        logger.info(f"DEBUG: Files received - Payroll: {pf.filename}, Billing: {bf.filename}")
         update_progress('Loading', 5, 'Reading payroll...')
         
+        print("DEBUG: About to read payroll with pandas", flush=True)
+        logger.info("DEBUG: About to read payroll with pandas")
         try:
+            print(f"DEBUG: Reading {pf.filename} with openpyxl engine", flush=True)
+            logger.info(f"DEBUG: Reading {pf.filename} with openpyxl engine")
             payroll_df = pd.read_excel(pf, engine='openpyxl')
-            logger.info(f"Payroll loaded: {len(payroll_df)} rows, {len(payroll_df.columns)} columns")
+            print(f"DEBUG: Payroll loaded successfully: {len(payroll_df)} rows, {len(payroll_df.columns)} columns", flush=True)
+            logger.info(f"DEBUG: Payroll loaded successfully: {len(payroll_df)} rows, {len(payroll_df.columns)} columns")
         except Exception as e:
+            print(f"ERROR READING PAYROLL: {str(e)}", flush=True)
             logger.error(f"PANDAS ERROR reading payroll: {str(e)}", exc_info=True)
             return f'Error reading payroll file: {str(e)}', 400
         
         update_progress('Loading', 20, 'Reading billing...')
         
+        print("DEBUG: About to read billing with pandas", flush=True)
+        logger.info("DEBUG: About to read billing with pandas")
         try:
+            print(f"DEBUG: Reading {bf.filename} with openpyxl engine", flush=True)
+            logger.info(f"DEBUG: Reading {bf.filename} with openpyxl engine")
             billing_df = pd.read_excel(bf, engine='openpyxl')
-            logger.info(f"Billing loaded: {len(billing_df)} rows, {len(billing_df.columns)} columns")
+            print(f"DEBUG: Billing loaded successfully: {len(billing_df)} rows, {len(billing_df.columns)} columns", flush=True)
+            logger.info(f"DEBUG: Billing loaded successfully: {len(billing_df)} rows, {len(billing_df.columns)} columns")
         except Exception as e:
+            print(f"ERROR READING BILLING: {str(e)}", flush=True)
             logger.error(f"PANDAS ERROR reading billing: {str(e)}", exc_info=True)
             return f'Error reading billing file: {str(e)}', 400
         
         update_progress('Processing', 40, 'Importing reconciliation module...')
         
+        print("DEBUG: About to import reconciliation module", flush=True)
+        logger.info("DEBUG: About to import reconciliation module")
         try:
             from reconciliation import BillPayReconciler
-            logger.info("Reconciliation module imported successfully")
+            print("DEBUG: Reconciliation module imported successfully", flush=True)
+            logger.info("DEBUG: Reconciliation module imported successfully")
         except ImportError as e:
+            print(f"IMPORT ERROR: {str(e)}", flush=True)
             logger.error(f"Import error: {str(e)}", exc_info=True)
             return f'Error importing reconciliation module: {str(e)}', 500
+        except Exception as e:
+            print(f"UNEXPECTED IMPORT ERROR: {str(e)}", flush=True)
+            logger.error(f"Unexpected import error: {str(e)}", exc_info=True)
+            return f'Error importing reconciliation: {str(e)}', 500
         
         update_progress('Processing', 60, 'Running reconciliation...')
         
+        print("DEBUG: Creating BillPayReconciler instance", flush=True)
+        logger.info("DEBUG: Creating BillPayReconciler instance")
         try:
             reconciler = BillPayReconciler(payroll_df, billing_df)
-            results = reconciler.reconcile()
-            logger.info(f"Reconciliation complete: {results['summary']['total_matches']} matches")
+            print("DEBUG: BillPayReconciler instance created", flush=True)
+            logger.info("DEBUG: BillPayReconciler instance created")
         except Exception as e:
+            print(f"ERROR CREATING RECONCILER: {str(e)}", flush=True)
+            logger.error(f"Error creating reconciler: {str(e)}", exc_info=True)
+            return f'Error creating reconciler: {str(e)}', 500
+        
+        print("DEBUG: Running reconciliation", flush=True)
+        logger.info("DEBUG: Running reconciliation")
+        try:
+            results = reconciler.reconcile()
+            print(f"DEBUG: Reconciliation complete: {results['summary']['total_matches']} matches", flush=True)
+            logger.info(f"DEBUG: Reconciliation complete: {results['summary']['total_matches']} matches")
+        except Exception as e:
+            print(f"ERROR IN RECONCILE: {str(e)}", flush=True)
             logger.error(f"Reconciliation error: {str(e)}", exc_info=True)
             return f'Error during reconciliation: {str(e)}', 500
         
         update_progress('Excel', 85, 'Creating report...')
         
+        print("DEBUG: Creating Excel workbook", flush=True)
+        logger.info("DEBUG: Creating Excel workbook")
         try:
             wb = Workbook()
             ws = wb.active
@@ -217,15 +266,21 @@ def reconcile():
                     for col_idx, value in enumerate(row_data[1:], 1):
                         ws_m.cell(row=row_idx, column=col_idx, value=value)
             
+            print("DEBUG: Saving Excel file", flush=True)
+            logger.info("DEBUG: Saving Excel file")
             output_path = f'/tmp/reconciliation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
             wb.save(output_path)
-            logger.info(f"Excel saved: {output_path}")
+            print(f"DEBUG: Excel saved to {output_path}", flush=True)
+            logger.info(f"DEBUG: Excel saved to {output_path}")
             
         except Exception as e:
+            print(f"ERROR CREATING EXCEL: {str(e)}", flush=True)
             logger.error(f"Excel generation error: {str(e)}", exc_info=True)
             return f'Error generating Excel: {str(e)}', 500
         
         update_progress('Complete', 100, 'Done!')
+        print("DEBUG: Sending file", flush=True)
+        logger.info("DEBUG: Sending file")
         
         return send_file(
             output_path,
@@ -235,7 +290,8 @@ def reconcile():
         )
     
     except Exception as e:
-        logger.error(f"RECONCILE ENDPOINT ERROR: {str(e)}", exc_info=True)
+        print(f"CRITICAL ERROR: {str(e)}", flush=True)
+        logger.error(f"RECONCILE ENDPOINT CRITICAL ERROR: {str(e)}", exc_info=True)
         return f'Unexpected error: {str(e)}', 500
 
 @app.route('/health')
@@ -249,10 +305,12 @@ def not_found(error):
 @app.errorhandler(500)
 def server_error(error):
     logger.error(f"Server error: {error}")
+    print(f"Server error: {error}", flush=True)
     return 'Server error', 500
 
 if __name__ == '__main__':
     host = os.environ.get('HOST', '0.0.0.0')
     port = int(os.environ.get('PORT', 10000))
+    print(f"Starting server on {host}:{port}", flush=True)
     logger.info(f"Starting server on {host}:{port}")
     app.run(host=host, port=port, debug=False, threaded=True)
