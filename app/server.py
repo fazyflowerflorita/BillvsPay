@@ -553,16 +553,24 @@ def progress():
 def reconcile():
     """Main reconciliation endpoint"""
     try:
-        # Reset progress
-        global current_progress
-        current_progress = {
-            'status': 'processing',
-            'stage': 'Initialization',
-            'progress': 0,
-            'message': 'Validating files...',
-            'estimated_time': 0,
-            'elapsed_time': 0
-        }
+       logger.info("=== RECONCILE START ===")
+        global start_time
+        start_time = None
+        
+        payroll_file = request.files.get('payroll')
+        billing_file = request.files.get('billing')
+        
+        if not payroll_file or not billing_file:
+            return 'Missing files', 400
+        
+        logger.info(f"Files received: {payroll_file.filename}, {billing_file.filename}")
+        update_progress('File Loading', 5, 'Loading payroll...')
+        
+        # YOUR EXISTING CODE HERE...
+        
+    except Exception as e:
+        logger.error(f"RECONCILE ERROR: {str(e)}", exc_info=True)
+        return f'Error: {str(e)}', 500
         
         tracker.start()
         
