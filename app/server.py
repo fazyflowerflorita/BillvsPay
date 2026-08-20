@@ -8,7 +8,10 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -141,66 +144,112 @@ def reconcile():
         pf = request.files.get('payroll')
         bf = request.files.get('billing')
         if not pf or not bf:
+            logger.error("Missing files")
             return 'Missing files', 400
         
         logger.info(f"Files received: {pf.filename}, {bf.filename}")
         update_progress('Loading', 5, 'Reading payroll...')
         
-        payroll_df = pd.read_excel(pf)
-        logger.info(f"Payroll loaded: {len(payroll_df)} rows")
+        try:
+            payroll_df = pd.read_excel(pf, engine='openpyxl')
+            logger.info(f"Payroll loaded: {len(payroll_df)} rows, {len(payroll_df.columns)} columns")
+        except Exception as e:
+            logger.error(f"PANDAS ERROR reading payroll: {str(e)}", exc_info=True)
+            return f'Error reading payroll file: {str(e)}', 400
         
         update_progress('Loading', 20, 'Reading billing...')
-        billing_df = pd.read_excel(bf)
-        logger.info(f"Billing loaded: {len(billing_df)} rows")
+        
+        try:
+            billing_df = pd.read_excel(bf, engine='openpyxl')
+            logger.info(f"Billing loaded: {len(billing_df)} rows, {len(billing_df.columns)} columns")
+        except Exception as e:
+            logger.error(f"PANDAS ERROR reading billing: {str(e)}", exc_info=True)
+            return f'Error reading billing file: {str(e)}', 400
         
         update_progress('Processing', 40, 'Importing reconciliation module...')
-        from reconciliation import BillPayReconciler
+        
+        try:
+            from reconciliation import BillPayReconciler
+            logger.info("Reconciliation module imported successfully")
+        except ImportError as e:
+            logger.error(f"Import error: {str(e)}", exc_info=True)
+            return f'Error importing reconciliation module: {str(e)}', 500
         
         update_progress('Processing', 60, 'Running reconciliation...')
-        reconciler = BillPayReconciler(payroll_df, billing_df)
-        results = reconciler.reconcile()
-        logger.info(f"Reconciliation complete: {results['summary']['total_matches']} matches")
+        
+        try:
+            reconciler = BillPayReconciler(payroll_df, billing_df)
+            results = reconciler.reconcile()
+            logger.info(f"Reconciliation complete: {results['summary']['total_matches']} matches")
+        except Exception as e:
+            logger.error(f"Reconciliation error: {str(e)}", exc_info=True)
+            return f'Error during reconciliation: {str(e)}', 500
         
         update_progress('Excel', 85, 'Creating report...')
-        wb = Workbook()
-        ws = wb.active
-        ws.title = 'Summary'
-        ws['A1'] = 'Bill vs Pay Reconciliation Report'
-        ws['A1'].font = Font(size=14, bold=True, color="FFFFFF")
-        ws['A1'].fill = PatternFill(start_color="1F5F99", end_color="1F5F99", fill_type="solid")
         
-        summary = results['summary']
-        ws['A3'] = 'Total Matches'
-        ws['B3'] = summary['total_matches']
-        ws['A4'] = 'Match Rate %'
-        ws['B4'] = f"{summary['match_rate_payroll']:.2f}%"
-        ws['A5'] = 'Matched Amount'
-        ws['B5'] = f"${summary['matched_payroll_amount']:,.2f}"
-        
-        if len(results['matches']) > 0:
-            ws_m = wb.create_sheet('Matches')
-            matches_df = results['matches']
-            for col_idx, col_name in enumerate(matches_df.columns, 1):
-                ws_m.cell(row=1, column=col_idx, value=col_name)
-            for row_idx, row_data in enumerate(matches_df.itertuples(), 2):
-                for col_idx, value in enumerate(row_data[1:], 1):
-                    ws_m.cell(row=row_idx, column=col_idx, value=value)
-        
-        output_path = f'/tmp/reconciliation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-        wb.save(output_path)
-        logger.info(f"Excel saved: {output_path}")
+        try:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Summary'
+            
+            ws['A1'] = 'Bill vs Pay Reconciliation Report'
+            ws['A1'].font = Font(size=14, bold=True, color="FFFFFF")
+            ws['A1'].fill = PatternFill(start_color="1F5F99", end_color="1F5F99", fill_type="solid")
+            
+            summary = results['summary']
+            ws['A3'] = 'Total Matches'
+            ws['B3'] = summary['total_matches']
+            ws['A4'] = 'Match Rate %'
+            ws['B4'] = f"{summary['match_rate_payroll']:.2f}%"
+            ws['A5'] = 'Matched Amount'
+            ws['B5'] = f"${summary['matched_payroll_amount']:,.2f}"
+            ws['A6'] = 'Unmatched Payroll'
+            ws['B6'] = f"${summary['unmatched_payroll_amount']:,.2f}"
+            ws['A7'] = 'Unmatched Billing'
+            ws['B7'] = f"${summary['unmatched_billing_amount']:,.2f}"
+            
+            if len(results['matches']) > 0:
+                ws_m = wb.create_sheet('Matches')
+                matches_df = results['matches']
+                for col_idx, col_name in enumerate(matches_df.columns, 1):
+                    ws_m.cell(row=1, column=col_idx, value=col_name)
+                for row_idx, row_data in enumerate(matches_df.itertuples(), 2):
+                    for col_idx, value in enumerate(row_data[1:], 1):
+                        ws_m.cell(row=row_idx, column=col_idx, value=value)
+            
+            output_path = f'/tmp/reconciliation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+            wb.save(output_path)
+            logger.info(f"Excel saved: {output_path}")
+            
+        except Exception as e:
+            logger.error(f"Excel generation error: {str(e)}", exc_info=True)
+            return f'Error generating Excel: {str(e)}', 500
         
         update_progress('Complete', 100, 'Done!')
         
-        return send_file(output_path, as_attachment=True, download_name=f"reconciliation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=f"reconciliation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
     
     except Exception as e:
-        logger.error(f"RECONCILE ERROR: {str(e)}", exc_info=True)
-        return f'Error: {str(e)}', 500
+        logger.error(f"RECONCILE ENDPOINT ERROR: {str(e)}", exc_info=True)
+        return f'Unexpected error: {str(e)}', 500
 
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok'}), 200
+
+@app.errorhandler(404)
+def not_found(error):
+    return 'Not found', 404
+
+@app.errorhandler(500)
+def server_error(error):
+    logger.error(f"Server error: {error}")
+    return 'Server error', 500
 
 if __name__ == '__main__':
     host = os.environ.get('HOST', '0.0.0.0')
