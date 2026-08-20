@@ -650,7 +650,11 @@ def not_found(error):
 def internal_error(error):
     logger.error(f"Internal server error: {error}")
     return jsonify({'error': 'Internal server error'}), 500
-
+    
+if __name__ == '__main__':
+    host = os.environ.get('HOST', '0.0.0.0')
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host=host, port=port, debug=False, threaded=True)
     
     logger.info(f"Starting server on {host}:{port}")
     app.run(host=host, port=port, debug=False, threaded=True)
